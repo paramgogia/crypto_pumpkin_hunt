@@ -1,15 +1,18 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import type { Difficulty } from "@/app/page"
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import type { Difficulty } from "@/app/page";
 
 interface StartScreenProps {
-  onStart: (difficulty: Difficulty) => void
-  onViewLeaderboard: () => void
+  onStart: (difficulty: Difficulty) => void;
+  onViewLeaderboard: () => void;
 }
 
-export default function StartScreen({ onStart, onViewLeaderboard }: StartScreenProps) {
+export default function StartScreen({
+  onStart,
+  onViewLeaderboard,
+}: StartScreenProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <motion.div
@@ -37,11 +40,14 @@ export default function StartScreen({ onStart, onViewLeaderboard }: StartScreenP
         </h1>
 
         <p className="text-xl md:text-2xl text-purple-200 mb-8 mt-6 max-w-2xl mx-auto">
-          Dare to collect glowing pumpkins before midnight? Beware the cursed ones...
+          Dare to collect glowing pumpkins before midnight? Beware the cursed
+          ones...
         </p>
 
         <div className="bg-black/40 backdrop-blur-sm rounded-lg p-8 mb-8 border border-purple-500/30">
-          <h2 className="text-2xl font-bold text-purple-300 mb-4">How to Play:</h2>
+          <h2 className="text-2xl font-bold text-purple-300 mb-4">
+            How to Play:
+          </h2>
           <ul className="text-left text-purple-100 space-y-2 mb-4">
             <li>✨ Click glowing orange pumpkins: +10 points</li>
             <li>💀 Avoid cursed skull pumpkins: -5 points</li>
@@ -50,13 +56,16 @@ export default function StartScreen({ onStart, onViewLeaderboard }: StartScreenP
           </ul>
         </div>
 
+       
+
         <div className="space-y-4">
-          <h2 className="text-3xl font-bold text-orange-300 mb-4">Choose Difficulty:</h2>
-          
+          <h2 className="text-3xl font-bold text-orange-300 mb-4">
+            Choose Difficulty:
+          </h2>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               onClick={() => onStart("easy")}
-              className="w-full max-w-md mx-auto block px-8 py-6 text-xl font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg"
+              className="w-full max-w-md mx-auto px-8 py-6 text-xl font-bold bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg text-center"
             >
               🟢 Easy - 4x4 Grid
             </Button>
@@ -65,7 +74,7 @@ export default function StartScreen({ onStart, onViewLeaderboard }: StartScreenP
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               onClick={() => onStart("medium")}
-              className="w-full max-w-md mx-auto block px-8 py-6 text-xl font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg"
+              className="w-full max-w-md mx-auto px-8 py-6 text-xl font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg text-center"
             >
               🟠 Medium - 6x6 Grid
             </Button>
@@ -74,7 +83,7 @@ export default function StartScreen({ onStart, onViewLeaderboard }: StartScreenP
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               onClick={() => onStart("hard")}
-              className="w-full max-w-md mx-auto block px-8 py-6 text-xl font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg"
+              className="w-full max-w-md mx-auto px-8 py-6 text-xl font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg text-center"
             >
               🔴 Hard - 8x8 Grid
             </Button>
@@ -84,13 +93,15 @@ export default function StartScreen({ onStart, onViewLeaderboard }: StartScreenP
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               onClick={onViewLeaderboard}
-              className="w-full max-w-md mx-auto block px-8 py-6 text-xl font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg mt-6"
+              className="w-full max-w-md mx-auto px-8 py-6 text-xl font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-lg mt-6 text-center"
             >
               🏆 View Leaderboard
             </Button>
           </motion.div>
         </div>
+
+
       </motion.div>
     </div>
-  )
+  );
 }

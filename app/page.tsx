@@ -89,7 +89,12 @@ export default function Home() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <GameBoard difficulty={difficulty} onGameOver={handleGameOver} />
+          <GameBoard 
+  difficulty={difficulty} 
+  onGameOver={handleGameOver} 
+  onBackToStart={handleBackToStart} 
+/>
+
           </motion.div>
         )}
 

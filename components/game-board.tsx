@@ -8,6 +8,7 @@ import type { Difficulty } from "@/app/page"
 interface GameBoardProps {
   difficulty: Difficulty
   onGameOver: (score: number) => void
+  onBackToStart: () => void
 }
 
 interface Pumpkin {
@@ -45,7 +46,7 @@ const GAME_CONFIG = {
   }
 }
 
-export default function GameBoard({ difficulty, onGameOver }: GameBoardProps) {
+export default function GameBoard({ difficulty, onGameOver, onBackToStart }: GameBoardProps) {
   const config = GAME_CONFIG[difficulty]
   const [pumpkins, setPumpkins] = useState<Pumpkin[]>([])
   const [score, setScore] = useState(0)
@@ -53,27 +54,23 @@ export default function GameBoard({ difficulty, onGameOver }: GameBoardProps) {
   const [gameActive, setGameActive] = useState(true)
   const [screenShake, setScreenShake] = useState(false)
 
-useEffect(() => {
-  if (!gameActive) return;
+  useEffect(() => {
+    if (!gameActive) return
 
-  const timer = setInterval(() => {
-    setTimeLeft((prev) => Math.max(prev - 1, 0));
-  }, 1000);
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => Math.max(prev - 1, 0))
+    }, 1000)
 
-  return () => clearInterval(timer);
-}, [gameActive]);
+    return () => clearInterval(timer)
+  }, [gameActive])
 
+  useEffect(() => {
+    if (timeLeft === 0) {
+      setGameActive(false)
+      setTimeout(() => onGameOver(score), 500)
+    }
+  }, [timeLeft, score, onGameOver])
 
-  // Game over effect
-useEffect(() => {
-  if (timeLeft === 0) {
-    setGameActive(false)
-    setTimeout(() => onGameOver(score), 500)
-  }
-}, [timeLeft, score, onGameOver])
-
-
-  // Spawn pumpkins effect
   useEffect(() => {
     if (!gameActive) return
 
@@ -85,34 +82,28 @@ useEffect(() => {
         type: Math.random() > config.cursedChance ? "good" : "cursed",
         spawnTime: Date.now(),
       }
-
       setPumpkins((prev) => [...prev, newPumpkin])
     }, config.spawnInterval)
 
     return () => clearInterval(spawnTimer)
   }, [gameActive, config])
 
-  // Remove expired pumpkins
   useEffect(() => {
     const cleanupTimer = setInterval(() => {
       setPumpkins((prev) => prev.filter((p) => Date.now() - p.spawnTime < config.pumpkinLifetime))
     }, 100)
-
     return () => clearInterval(cleanupTimer)
   }, [config])
 
   const handlePumpkinClick = useCallback(
     (pumpkin: Pumpkin) => {
       if (!gameActive) return
-
-      if (pumpkin.type === "good") {
-        setScore((prev) => prev + 10)
-      } else {
+      if (pumpkin.type === "good") setScore((prev) => prev + 10)
+      else {
         setScore((prev) => Math.max(0, prev - 5))
         setScreenShake(true)
         setTimeout(() => setScreenShake(false), 300)
       }
-
       setPumpkins((prev) => prev.filter((p) => p.id !== pumpkin.id))
     },
     [gameActive],
@@ -120,8 +111,20 @@ useEffect(() => {
 
   return (
     <div
-      className={`min-h-screen flex flex-col items-center justify-center px-4 py-8 transition-transform ${screenShake ? "animate-pulse" : ""}`}
+      className={`relative min-h-screen flex flex-col items-center justify-center px-4 py-8 transition-transform ${screenShake ? "animate-pulse" : ""}`}
     >
+      {/* Back button */}
+      <div className="absolute top-4 left-4 z-20">
+        <motion.button
+          onClick={onBackToStart}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="px-4 py-2 rounded-lg bg-purple-600 text-white font-bold shadow-lg border-2 border-purple-500"
+        >
+          🏠 Back to Start
+        </motion.button>
+      </div>
+
       {/* Header with score and timer */}
       <div className="w-full max-w-4xl flex justify-between items-center mb-8 flex-wrap gap-4">
         <motion.div
@@ -132,9 +135,7 @@ useEffect(() => {
           Score: {score}
         </motion.div>
 
-        <div className="text-2xl font-bold text-purple-300 capitalize">
-          {difficulty}
-        </div>
+        <div className="text-2xl font-bold text-purple-300 capitalize">{difficulty}</div>
 
         <motion.div
           className={`text-3xl font-bold ${timeLeft > 10 ? "text-green-400" : "text-red-400"}`}
