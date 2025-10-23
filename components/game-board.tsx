@@ -23,24 +23,24 @@ const GAME_CONFIG = {
     gridCols: 4,
     gridRows: 4,
     spawnInterval: 1500,
-    pumpkinLifetime: 2500,
-    totalTime: 20,
+    pumpkinLifetime: 2000,
+    totalTime: 45,
     cursedChance: 0.3
   },
   medium: {
     gridCols: 6,
     gridRows: 6,
     spawnInterval: 1000,
-    pumpkinLifetime: 2000,
-    totalTime: 60,
+    pumpkinLifetime: 1500,
+    totalTime: 45,
     cursedChance: 0.4
   },
   hard: {
     gridCols: 8,
     gridRows: 8,
     spawnInterval: 700,
-    pumpkinLifetime: 1500,
-    totalTime: 60,
+    pumpkinLifetime: 1000,
+    totalTime: 45,
     cursedChance: 0.5
   }
 }

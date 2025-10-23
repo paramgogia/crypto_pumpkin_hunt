@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { getTopScores, type Score } from "@/lib/leaderboard"
-import type { Difficulty } from "@/app/page"
+import { connectWallet, fetchLeaderboard } from "@/lib/contract"
 
 interface LeaderboardProps {
   onPlayAgain: () => void
@@ -12,24 +11,49 @@ interface LeaderboardProps {
 }
 
 export default function Leaderboard({ onPlayAgain, onBackToStart }: LeaderboardProps) {
-  const [scores, setScores] = useState<Score[]>([])
-  const [filter, setFilter] = useState<Difficulty | "all">("all")
-  const [loading, setLoading] = useState(true)
+  const [scores, setScores] = useState<any[]>([])
+  const [filter, setFilter] = useState<"all" | "easy" | "medium" | "hard">("all")
+  const [loading, setLoading] = useState(false)
+  const [wallet, setWallet] = useState<string | null>(null)
+
+  const DIFFICULTY_MAP = { easy: 0, medium: 1, hard: 2 }
+  const DIFFICULTY_LABELS = ["easy", "medium", "hard"]
+  
 
   useEffect(() => {
     loadScores()
-  }, [])
+  }, [filter])
+
+  const connect = async () => {
+    try {
+      const acc = await connectWallet()
+      setWallet(acc)
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
 
   const loadScores = async () => {
     setLoading(true)
-    const allScores = await getTopScores()
-    setScores(allScores)
+    try {
+      let list: any[] = []
+      if (filter === "all") {
+        const easy = (await fetchLeaderboard(0)).map(s => ({ ...s, difficulty: 0 }))
+        const medium = (await fetchLeaderboard(1)).map(s => ({ ...s, difficulty: 1 }))
+        const hard = (await fetchLeaderboard(2)).map(s => ({ ...s, difficulty: 2 }))
+        list = [...easy, ...medium, ...hard]
+      } else {
+        const diffNum = DIFFICULTY_MAP[filter]
+        list = (await fetchLeaderboard(diffNum)).map(s => ({ ...s, difficulty: diffNum }))
+      }
+      setScores(list.sort((a, b) => b.score - a.score))
+    } catch (err) {
+      console.error("Error loading scores", err)
+    }
     setLoading(false)
   }
 
-  const filteredScores = filter === "all" 
-    ? scores.slice(0, 10)
-    : scores.filter(s => s.difficulty === filter).slice(0, 10)
+  
 
   const difficultyColors = {
     easy: "bg-green-600",
@@ -46,109 +70,90 @@ export default function Leaderboard({ onPlayAgain, onBackToStart }: LeaderboardP
         className="w-full max-w-2xl"
       >
         <h1 className="text-5xl font-bold text-center text-orange-400 mb-8 drop-shadow-lg">
-          🏆 Leaderboard
+          🏆 On-Chain Leaderboard
         </h1>
 
+        {!wallet ? (
+          <div className="text-center mb-8">
+            <Button onClick={connect} className="bg-purple-600 text-white text-lg font-bold px-6 py-4 rounded-lg">
+              Connect Wallet
+            </Button>
+          </div>
+        ) : (
+          <p className="text-purple-300 text-center mb-4">
+            Connected: {wallet.slice(0, 6)}...{wallet.slice(-4)}
+          </p>
+        )}
+
         <div className="flex gap-2 mb-6 flex-wrap justify-center">
-          <Button
-            onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg font-bold ${filter === "all" ? "bg-purple-600" : "bg-slate-700"} text-white`}
-          >
-            All
-          </Button>
-          <Button
-            onClick={() => setFilter("easy")}
-            className={`px-4 py-2 rounded-lg font-bold ${filter === "easy" ? "bg-green-600" : "bg-slate-700"} text-white`}
-          >
-            Easy
-          </Button>
-          <Button
-            onClick={() => setFilter("medium")}
-            className={`px-4 py-2 rounded-lg font-bold ${filter === "medium" ? "bg-orange-600" : "bg-slate-700"} text-white`}
-          >
-            Medium
-          </Button>
-          <Button
-            onClick={() => setFilter("hard")}
-            className={`px-4 py-2 rounded-lg font-bold ${filter === "hard" ? "bg-red-600" : "bg-slate-700"} text-white`}
-          >
-            Hard
-          </Button>
+          {["all", "easy", "medium", "hard"].map((d) => (
+            <Button
+              key={d}
+              onClick={() => setFilter(d as any)}
+              className={`px-4 py-2 rounded-lg font-bold ${
+                filter === d ? "bg-purple-600" : "bg-slate-700"
+              } text-white`}
+            >
+              {d.toUpperCase()}
+            </Button>
+          ))}
         </div>
 
         <div className="space-y-4 mb-8">
           {loading ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-black/40 backdrop-blur-sm rounded-lg p-8 text-center border border-purple-500/30"
-            >
-              <p className="text-purple-200 text-lg">Loading scores...</p>
-            </motion.div>
-          ) : filteredScores.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-black/40 backdrop-blur-sm rounded-lg p-8 text-center border border-purple-500/30"
-            >
+            <div className="bg-black/40 rounded-lg p-8 text-center border border-purple-500/30">
+              <p className="text-purple-200 text-lg">Fetching on-chain scores...</p>
+            </div>
+          ) : scores.length === 0 ? (
+            <div className="bg-black/40 rounded-lg p-8 text-center border border-purple-500/30">
               <p className="text-purple-200 text-lg">No scores yet. Be the first to hunt!</p>
-            </motion.div>
+            </div>
           ) : (
-            filteredScores.map((score, index) => (
-              <motion.div
-                key={`${score.name}-${score.timestamp}`}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-gradient-to-r from-purple-900/50 to-orange-900/50 backdrop-blur-sm rounded-lg p-4 border border-purple-500/30 flex items-center justify-between hover:border-orange-500/50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <motion.div
-                    className="text-3xl font-bold text-orange-400 w-12 text-center"
-                    animate={{ scale: index === 0 ? [1, 1.1, 1] : 1 }}
-                    transition={{ duration: 1, repeat: index === 0 ? Number.POSITIVE_INFINITY : 0 }}
-                  >
-                    {index === 0 ? "👑" : `#${index + 1}`}
-                  </motion.div>
-                  <div>
-                    <p className="text-xl font-bold text-white">{score.name}</p>
-                    <div className="flex gap-2 items-center flex-wrap">
-                      <span className={`text-xs px-2 py-1 rounded ${difficultyColors[score.difficulty]} text-white font-bold uppercase`}>
-                        {score.difficulty}
-                      </span>
-                      <p className="text-sm text-purple-300">{new Date(score.timestamp).toLocaleDateString()}</p>
+            scores.map((score, index) => {
+              const diffLabel = DIFFICULTY_LABELS[score.difficulty]
+              const nameOrWallet = score.name && score.name.trim() !== "" ? score.name : `${score.player.slice(0,6)}...${score.player.slice(-4)}`
+              return (
+                <motion.div
+                  key={`${score.player}-${index}`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-gradient-to-r from-purple-900/50 to-orange-900/50 backdrop-blur-sm rounded-lg p-4 border border-purple-500/30 flex items-center justify-between hover:border-orange-500/50 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="text-3xl font-bold text-orange-400 w-12 text-center">
+                      {index === 0 ? "👑" : `#${index + 1}`}
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold text-white">{nameOrWallet}</p>
+                      <div className="flex gap-2 items-center flex-wrap">
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${difficultyColors[diffLabel]} text-white font-bold uppercase`}
+                        >
+                          {diffLabel}
+                        </span>
+                        <p className="text-sm text-purple-300">
+                          {score.timestamp.toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <motion.div
-                  className="text-3xl font-bold text-orange-400"
-                  animate={{ scale: index === 0 ? [1, 1.05, 1] : 1 }}
-                  transition={{ duration: 1, repeat: index === 0 ? Number.POSITIVE_INFINITY : 0 }}
-                >
-                  {score.score}
+                  <div className="text-3xl font-bold text-orange-400">{score.score}</div>
                 </motion.div>
-              </motion.div>
-            ))
+              )
+            })
           )}
         </div>
 
-        <div className="flex gap-4 justify-center flex-wrap">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={onPlayAgain}
-              className="px-8 py-6 text-lg font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-lg"
-            >
-              Hunt Again
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={onBackToStart}
-              className="px-8 py-6 text-lg font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
-            >
-              Back to Start
-            </Button>
-          </motion.div>
+        {/* Back to Start / Play Again Buttons */}
+        <div className="flex gap-4 justify-center mt-4">
+          
+          <Button
+            onClick={onPlayAgain}
+            className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 py-3 rounded-lg"
+          >
+            🎮 Let's Play
+          </Button>
         </div>
       </motion.div>
     </div>

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { saveScore } from "@/lib/leaderboard"
+import { connectWallet, submitScore } from "@/lib/contract" // ✅ using your helper file
 import type { Difficulty } from "@/app/page"
 
 interface GameOverScreenProps {
@@ -14,15 +14,52 @@ interface GameOverScreenProps {
   onPlayAgain: () => void
 }
 
-export default function GameOverScreen({ score, difficulty, onSaveScore, onPlayAgain }: GameOverScreenProps) {
+export default function GameOverScreen({
+  score,
+  difficulty,
+  onSaveScore,
+  onPlayAgain
+}: GameOverScreenProps) {
   const [playerName, setPlayerName] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async () => {
-    if (playerName.trim()) {
-      await saveScore(playerName, score, difficulty)
+    if (!playerName.trim()) return
+    setLoading(true)
+
+    try {
+      console.log("🚀 Starting score submission...")
+      console.log("Player Name:", playerName)
+      console.log("Score:", score)
+      console.log("Difficulty:", difficulty)
+
+      // ✅ Connect wallet
+      const wallet = await connectWallet()
+      console.log("🦊 Wallet connected:", wallet)
+
+      // 🔹 Map difficulty string to number
+      const difficultyMap: Record<Difficulty, number> = {
+        easy: 0,
+        medium: 1,
+        hard: 2,
+      }
+      const difficultyNumber = difficultyMap[difficulty]
+      console.log("Mapped Difficulty Number:", difficultyNumber)
+
+      // ✅ Submit on-chain score
+      console.log("Submitting to contract...")
+      const receipt = await submitScore(score, difficultyNumber, playerName)
+      console.log("✅ Transaction receipt:", receipt)
+      console.log("Transaction Hash:", receipt.transactionHash)
+
       setSubmitted(true)
-      setTimeout(onSaveScore, 1000)
+      setTimeout(onSaveScore, 1200)
+    } catch (err: any) {
+      console.error("❌ Error submitting score:", err)
+      alert(err.reason || err.message || "Error submitting score on-chain.")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -72,7 +109,7 @@ export default function GameOverScreen({ score, difficulty, onSaveScore, onPlayA
 
           {!submitted ? (
             <div className="space-y-4">
-              <p className="text-purple-200 mb-4">Enter your name to save your score:</p>
+              <p className="text-purple-200 mb-4">Enter your name to save your score on-chain:</p>
               <Input
                 type="text"
                 placeholder="Your name..."
@@ -84,10 +121,10 @@ export default function GameOverScreen({ score, difficulty, onSaveScore, onPlayA
               />
               <Button
                 onClick={handleSubmit}
-                disabled={!playerName.trim()}
+                disabled={!playerName.trim() || loading}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3"
               >
-                Save Score
+                {loading ? "Saving on-chain..." : "Save Score"}
               </Button>
             </div>
           ) : (
@@ -96,7 +133,7 @@ export default function GameOverScreen({ score, difficulty, onSaveScore, onPlayA
               animate={{ opacity: 1 }} 
               className="text-green-400 font-bold text-lg"
             >
-              Score saved! Redirecting to leaderboard...
+              Score saved on-chain! Redirecting to leaderboard...
             </motion.p>
           )}
         </motion.div>
